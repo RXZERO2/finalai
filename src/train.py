@@ -1,17 +1,16 @@
 """
-Model Training Script (`src/train.py`) for 4-Class Coffee Bean Roast Classification:
+Model Training Script (`src/train.py`) for 3-Class Coffee Roast Level Classification:
   - Index 0: Dark
-  - Index 1: Green
-  - Index 2: Light
-  - Index 3: Medium
+  - Index 1: Light
+  - Index 2: Medium
 
 Features:
-- Lightweight Transfer Learning backbone (`mobilenet_v2` or `resnet18`) modified for 4 classes.
+- Lightweight Transfer Learning backbone (`mobilenet_v2` or `resnet18`) modified for 3 classes (`num_classes = 3`).
 - Preprocessing & Augmentation: Resize(224, 224), RandomHorizontalFlip, RandomVerticalFlip,
   ColorJitter, and ImageNet Normalization.
 - CrossEntropyLoss + Adam optimizer + Early Stopping.
 - Saves best model checkpoint to `models/coffee_model_best.pth`.
-- Saves class mapping `{"0": "Dark", "1": "Green", "2": "Light", "3": "Medium"}` to `models/classes.json`.
+- Saves class mapping `{"0": "Dark", "1": "Light", "2": "Medium"}` to `models/classes.json`.
 """
 
 from __future__ import annotations
@@ -30,7 +29,7 @@ from torchvision import datasets, models, transforms
 
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD = [0.229, 0.224, 0.225]
-EXPECTED_CLASS_TO_IDX = {"Dark": 0, "Green": 1, "Light": 2, "Medium": 3}
+EXPECTED_CLASS_TO_IDX = {"Dark": 0, "Light": 1, "Medium": 2}
 
 
 class EarlyStopping:
@@ -123,11 +122,11 @@ def get_dataloaders(
 
 def build_model(
     arch: str = "mobilenet_v2",
-    num_classes: int = 4,
+    num_classes: int = 3,
     pretrained: bool = True,
     freeze_backbone: bool = False,
 ) -> nn.Module:
-    """Build Transfer Learning model (`mobilenet_v2` or `resnet18`) with a 4-class head."""
+    """Build Transfer Learning model (`mobilenet_v2` or `resnet18`) with a 3-class head."""
     arch = arch.lower()
     if arch == "mobilenet_v2":
         weights = models.MobileNet_V2_Weights.DEFAULT if pretrained else None
@@ -156,7 +155,7 @@ def build_model(
 
 def save_class_mapping(class_to_idx: Dict[str, int], output_path: Path) -> None:
     """
-    Save exact mapping `{"0": "Dark", "1": "Green", "2": "Light", "3": "Medium"}`
+    Save exact mapping `{"0": "Dark", "1": "Light", "2": "Medium"}`
     to `models/classes.json`.
     """
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -219,7 +218,7 @@ def train(
     freeze_backbone: bool = False,
     num_workers: int = 0,
 ) -> None:
-    """Train the 4-class Coffee Roast classifier and save `models/coffee_model_best.pth`."""
+    """Train the 3-class Coffee Roast classifier and save `models/coffee_model_best.pth`."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device} | Architecture: {arch}")
 
@@ -310,7 +309,7 @@ def train(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Train 4-Class Coffee Bean Classifier (Dark, Green, Light, Medium)."
+        description="Train 3-Class Coffee Roast Classifier (Dark, Light, Medium)."
     )
     parser.add_argument("--data-dir", type=Path, default=Path("data"), help="Dataset root directory.")
     parser.add_argument("--model-dir", type=Path, default=Path("models"), help="Model output directory.")

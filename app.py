@@ -1,16 +1,14 @@
 """
-Production-ready Streamlit application (`app.py`) for 4-Class Coffee Bean Roast Classification:
+Production-ready Streamlit application (`app.py`) for 3-Class Coffee Roast Level Classification:
   - Index 0: Dark
-  - Index 1: Green (Unroasted / Raw Coffee Bean)
-  - Index 2: Light
-  - Index 3: Medium
+  - Index 1: Light
+  - Index 2: Medium
 
 Features:
 1. Loads `models/coffee_model_best.pth` and `models/classes.json` with `@st.cache_resource`.
 2. Supports both file upload (JPG/PNG) and live camera capture (`st.camera_input`).
-3. Displays predicted class with dynamic color badge, confidence score (%), and a 4-class probability bar chart.
-4. Dedicated note/badge for the `Green` class ("Unroasted / Raw Coffee Bean") alongside sensory/tasting
-   profiles for `Dark`, `Medium`, and `Light`.
+3. Displays predicted roast level with dynamic color badge, confidence score (%), and a 3-class probability bar chart.
+4. Displays sensory and tasting profiles for Light, Medium, and Dark roasts.
 """
 
 from __future__ import annotations
@@ -39,81 +37,60 @@ from train import IMAGENET_MEAN, IMAGENET_STD, build_model
 DEFAULT_MODEL_PATH = ROOT_DIR / "models" / "coffee_model_best.pth"
 FALLBACK_MODEL_PATH = ROOT_DIR / "models" / "best_model.pth"
 DEFAULT_CLASSES_PATH = ROOT_DIR / "models" / "classes.json"
-DEFAULT_CLASSES = ["Dark", "Green", "Light", "Medium"]
+DEFAULT_CLASSES = ["Dark", "Light", "Medium"]
 
-# Detailed metadata for all 4 classes: Dark, Green, Light, Medium
+# Detailed sensory & tasting metadata for the 3 roasted classes: Light, Medium, Dark
 ROAST_METADATA: Dict[str, Dict[str, str]] = {
-    "Green": {
-        "badge_bg": "#4F772D",
-        "badge_text": "#FFFFFF",
-        "border_color": "#31572C",
-        "status_pill": "UNROASTED / RAW COFFEE BEAN",
-        "tagline": "Unroasted / Raw Agricultural Coffee Seed — Requires Roasting Before Brewing",
-        "acidity": "N/A (Raw / Unroasted — Grassy & Astringent if brewed raw)",
-        "body": "Thin, vegetal & herbal infusion (Not standard roasted coffee)",
-        "flavor_notes": "Raw green pea, fresh-cut grass, hay, herbal tea (Prior to Maillard reaction)",
-        "roast_temp": "Ambient / Unroasted (20°C — Moisture content ~10–12%)",
-        "brewing": "Must be roasted first! (Or steeped only for specialized green coffee extract)",
-        "description": (
-            "Green coffee beans are raw, unroasted seeds of the Coffea cherry. They contain high levels "
-            "of chlorogenic acid and locked-in sucrose/amino precursors, but have not yet undergone "
-            "roasting (Maillard reactions and caramelization) needed to develop soluble coffee aromas."
-        ),
-        "is_green": "true",
-    },
     "Light": {
         "badge_bg": "#D4A373",
         "badge_text": "#1F1308",
         "border_color": "#B5835A",
         "status_pill": "LIGHT ROAST",
-        "tagline": "Bright, Complex & Origin-Forward",
+        "tagline": "High Acidity, Floral & Fruity — Origin-Forward",
         "acidity": "High, crisp & vibrant",
-        "body": "Light, tea-like to silky",
-        "flavor_notes": "Citrus, berry, floral jasmine, green apple, honey sweetness",
+        "body": "Light, silky & tea-like",
+        "flavor_notes": "Citrus, berry, floral jasmine, stone fruit, honey sweetness",
         "roast_temp": "196°C – 205°C (Dropped at First Crack)",
         "brewing": "Pour-Over (V60, Chemex), AeroPress, Filter Drip",
         "description": (
             "Light roasts are dropped shortly after the first crack, preserving the delicate "
-            "aromatic compounds and natural terroir of the coffee origin. Expect pronounced "
-            "acidity, fruity/floral complexity, dry bean surface, and minimal roast bitterness."
+            "aromatic compounds and natural terroir of the coffee origin. Expect high acidity, "
+            "bright floral and fruity notes, a dry bean surface, and minimal roast bitterness."
         ),
-        "is_green": "false",
     },
     "Medium": {
         "badge_bg": "#8B5A2B",
         "badge_text": "#FFFFFF",
         "border_color": "#6E4720",
         "status_pill": "MEDIUM ROAST",
-        "tagline": "Balanced, Sweet & Rounded",
-        "acidity": "Medium, well-integrated",
+        "tagline": "Balanced, Chocolate & Nutty with Natural Sweetness",
+        "acidity": "Medium, well-integrated & rounded",
         "body": "Medium, smooth & syrupy",
-        "flavor_notes": "Caramel, milk chocolate, roasted hazelnut, stone fruit, brown spice",
+        "flavor_notes": "Milk chocolate, roasted hazelnut, caramel, almond, brown sugar sweetness",
         "roast_temp": "210°C – 220°C (Between First & Second Crack)",
         "brewing": "Drip Coffee Maker, Clever Dripper, French Press, Balanced Espresso",
         "description": (
             "Medium roasts strike a harmonious balance between origin character and Maillard "
-            "caramelization. Acidity softens while body and natural sugars peak, yielding "
-            "chocolatey, nutty, and caramel-forward notes."
+            "caramelization. Acidity softens while natural sugars and body peak, delivering rich "
+            "chocolate, nutty, and sweet caramel flavor profiles."
         ),
-        "is_green": "false",
     },
     "Dark": {
         "badge_bg": "#3B2314",
         "badge_text": "#F5EBE6",
         "border_color": "#23140B",
         "status_pill": "DARK ROAST",
-        "tagline": "Bold, Full-Bodied & Intense",
-        "acidity": "Low, muted",
-        "body": "Heavy, rich & velvety",
-        "flavor_notes": "Dark bittersweet chocolate, toasted walnut, molasses, smoky cedar",
+        "tagline": "Bold, Low Acidity, Smoky & Bittersweet",
+        "acidity": "Low, muted & smooth",
+        "body": "Heavy, full-bodied & velvety",
+        "flavor_notes": "Dark bittersweet chocolate, smoky cedar, toasted walnut, molasses, roasted cocoa",
         "roast_temp": "225°C – 240°C (At or Beyond Second Crack)",
         "brewing": "Espresso, Moka Pot, French Press, Cold Brew",
         "description": (
-            "Dark roasts develop past the second crack, bringing natural oils to the bean surface. "
-            "Roast-driven flavors dominate over origin nuances, delivering a low-acid, bold, "
-            "bittersweet, and smoky cup that pairs well with milk."
+            "Dark roasts develop past the second crack, drawing natural oils to the bean surface. "
+            "Roast-driven flavors take center stage, producing a bold, low-acidity, smoky, and "
+            "bittersweet cup that pairs exceptionally well with milk."
         ),
-        "is_green": "false",
     },
 }
 
@@ -127,7 +104,7 @@ def get_inference_transform() -> transforms.Compose:
     ])
 
 
-@st.cache_resource(show_spinner="Loading 4-Class Coffee Roast Classifier...")
+@st.cache_resource(show_spinner="Loading 3-Class Coffee Roast Classifier...")
 def load_model_and_classes(
     model_path_str: str,
     classes_path_str: str,
@@ -144,12 +121,12 @@ def load_model_and_classes(
 
     if not model_path.exists():
         raise FileNotFoundError(
-            f"Checkpoint not found at '{model_path}'. Run `python src/train.py` first."
+            f"Checkpoint not found at '{model_path}'. Run `python src/train.py --epochs 15` first."
         )
 
     checkpoint = torch.load(model_path, map_location=device, weights_only=False)
 
-    # Resolve 4-class index mapping: {"0": "Dark", "1": "Green", "2": "Light", "3": "Medium"}
+    # Resolve 3-class index mapping: {"0": "Dark", "1": "Light", "2": "Medium"}
     class_names: List[str] = DEFAULT_CLASSES
     if classes_path.exists():
         with open(classes_path, "r", encoding="utf-8") as f:
@@ -218,18 +195,17 @@ def predict_image(
 
 
 def render_confidence_chart(prob_dict: Dict[str, float]) -> plt.Figure:
-    """Plot horizontal probability bar chart across all 4 classes (Dark, Green, Light, Medium)."""
-    # Present in natural progression or index order
-    display_order = ["Green", "Light", "Medium", "Dark"]
+    """Plot horizontal probability bar chart across the 3 roast classes (Light, Medium, Dark)."""
+    display_order = ["Light", "Medium", "Dark"]
     labels = [c for c in display_order if c in prob_dict] + [
         c for c in prob_dict if c not in display_order
     ]
     values = [prob_dict[c] * 100.0 for c in labels]
     colors = [ROAST_METADATA.get(c, {}).get("badge_bg", "#6C757D") for c in labels]
 
-    fig, ax = plt.subplots(figsize=(6.4, 3.0))
+    fig, ax = plt.subplots(figsize=(6.4, 2.7))
     y_pos = np.arange(len(labels))
-    bars = ax.barh(y_pos, values, color=colors, height=0.58, edgecolor="#2B2B2B", linewidth=0.8)
+    bars = ax.barh(y_pos, values, color=colors, height=0.55, edgecolor="#2B2B2B", linewidth=0.8)
 
     ax.set_yticks(y_pos)
     ax.set_yticklabels(labels, fontsize=11, fontweight="bold")
@@ -257,9 +233,8 @@ def render_confidence_chart(prob_dict: Dict[str, float]) -> plt.Figure:
 
 
 def render_roast_badge_and_profile(pred_class: str, confidence: float) -> None:
-    """Render dynamic badge, Green bean alert note (when Green), and tasting profile."""
+    """Render dynamic roast level badge and sensory/tasting profile card."""
     profile = ROAST_METADATA.get(pred_class, ROAST_METADATA["Medium"])
-    title_label = "Green Coffee Bean (Unroasted / Raw)" if pred_class == "Green" else f"{pred_class} Roast"
 
     badge_html = f"""
     <div style="
@@ -275,7 +250,7 @@ def render_roast_badge_and_profile(pred_class: str, confidence: float) -> None:
             {profile['status_pill']}
         </div>
         <div style="display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; margin-top: 4px;">
-            <span style="font-size: 1.9rem; font-weight: 800;">{title_label}</span>
+            <span style="font-size: 1.95rem; font-weight: 800;">{pred_class} Roast</span>
             <span style="font-size: 1.2rem; font-weight: 700; padding: 4px 12px; border-radius: 20px; background: rgba(0,0,0,0.20);">
                 {confidence * 100:.1f}% Confidence
             </span>
@@ -287,40 +262,32 @@ def render_roast_badge_and_profile(pred_class: str, confidence: float) -> None:
     """
     st.markdown(badge_html, unsafe_allow_html=True)
 
-    if pred_class == "Green":
-        st.warning(
-            "🌱 **Unroasted / Raw Coffee Bean Detected (`Green`):** "
-            "These beans are in their raw agricultural state prior to roasting. "
-            "They should go through a roaster (First Crack at ~196°C+) before grinding and brewing as standard coffee."
-        )
-
-    st.markdown("#### Sensory & Bean Profile")
+    st.markdown("#### Sensory & Tasting Profile")
     st.write(profile["description"])
 
     col_a, col_b = st.columns(2)
     with col_a:
-        st.markdown(f"**Flavor / Aroma Notes:**\n{profile['flavor_notes']}")
+        st.markdown(f"**Flavor / Tasting Notes:**\n{profile['flavor_notes']}")
         st.markdown(f"**Acidity:** {profile['acidity']}")
         st.markdown(f"**Body / Mouthfeel:** {profile['body']}")
     with col_b:
-        st.markdown(f"**Recommended Handling / Brewing:**\n{profile['brewing']}")
-        st.markdown(f"**Temperature Stage:** {profile['roast_temp']}")
+        st.markdown(f"**Recommended Brewing:**\n{profile['brewing']}")
+        st.markdown(f"**Typical Roast Drop Temp:** {profile['roast_temp']}")
 
 
 def render_sidebar() -> Tuple[Path, Path]:
-    """Configure sidebar with 4-class project details and checkpoint paths."""
+    """Configure sidebar with 3-class project details and checkpoint paths."""
     with st.sidebar:
         st.header("About This Project")
         st.markdown(
             """
-            **Coffee Bean Roast Level Classifier** classifies coffee beans into **4 stages**:
-            - `0`: **Dark** Roast
-            - `1`: **Green** *(Unroasted / Raw Bean)*
-            - `2`: **Light** Roast
-            - `3`: **Medium** Roast
+            **Coffee Roast Level Classifier** classifies roasted coffee beans into **3 roast levels**:
+            - `0`: **Dark** Roast *(Bold, low acidity, smoky/bitter)*
+            - `1`: **Light** Roast *(High acidity, floral/fruity)*
+            - `2`: **Medium** Roast *(Balanced, chocolate/nutty, sweetness)*
 
             **Model Pipeline:**
-            - **Backbone:** `MobileNetV2` / `ResNet18` (4-class head)
+            - **Backbone:** `MobileNetV2` / `ResNet18` (3-class head)
             - **Transforms:** `224×224` Resize, Horizontal/Vertical Flip, ColorJitter, ImageNet Norm
             - **Checkpoint:** `models/coffee_model_best.pth`
             """
@@ -342,15 +309,15 @@ def render_sidebar() -> Tuple[Path, Path]:
 
 def main() -> None:
     st.set_page_config(
-        page_title="Coffee Bean Roast Classifier (4 Classes)",
+        page_title="Coffee Roast Level Classifier",
         page_icon="☕",
         layout="wide",
     )
 
-    st.title("☕ Coffee Bean Roast Level Classifier")
+    st.title("☕ Coffee Roast Level Classifier")
     st.caption(
-        "4-Class Computer Vision Inspection — Identify **Green (Unroasted)**, **Light**, "
-        "**Medium**, and **Dark** coffee beans with real-time sensory profiling."
+        "Computer Vision Quality Control & Sensory Profiling — Classify roasted coffee beans into "
+        "**Light**, **Medium**, or **Dark** roast levels in real time."
     )
 
     model_path, classes_path = render_sidebar()
@@ -368,7 +335,7 @@ def main() -> None:
     except FileNotFoundError as err:
         st.error(
             f"**Model checkpoint not found:** `{model_path}`\n\n"
-            "Verify the dataset and train the 4-class model first:\n"
+            "Verify the dataset and train the 3-class model first:\n"
             "```bash\n"
             "python src/verify_data.py\n"
             "python src/train.py --epochs 15\n"
@@ -386,7 +353,7 @@ def main() -> None:
 
     with tab_upload:
         uploaded_file = st.file_uploader(
-            "Upload an image of coffee beans (Green, Light, Medium, or Dark)",
+            "Upload an image of roasted coffee beans (Light, Medium, or Dark)",
             type=["jpg", "jpeg", "png"],
         )
         if uploaded_file is not None:
@@ -394,8 +361,8 @@ def main() -> None:
             source_label = f"Uploaded File: `{uploaded_file.name}`"
 
     with tab_camera:
-        st.info("Place coffee beans under clear lighting and take a photo.")
-        camera_photo = st.camera_input("Capture coffee beans")
+        st.info("Place roasted coffee beans under clear lighting and take a photo.")
+        camera_photo = st.camera_input("Capture roasted coffee beans")
         if camera_photo is not None:
             input_image = Image.open(camera_photo).convert("RGB")
             source_label = "Live Camera Capture"
@@ -417,7 +384,7 @@ def main() -> None:
 
             render_roast_badge_and_profile(pred_class, top_conf)
 
-            st.markdown("#### 4-Class Probability Distribution")
+            st.markdown("#### 3-Class Probability Distribution")
             fig = render_confidence_chart(prob_dict)
             st.pyplot(fig, use_container_width=True)
             plt.close(fig)
@@ -432,10 +399,10 @@ def main() -> None:
                 color: #555555;
                 background-color: rgba(212, 163, 115, 0.08);
             ">
-                <h4 style="margin-bottom: 6px;">Ready for 4-Class Inference</h4>
+                <h4 style="margin-bottom: 6px;">Ready for 3-Class Roast Inference</h4>
                 <p style="margin: 0;">
                     Choose <b>Upload Image (JPG / PNG)</b> or <b>Live Camera Capture</b> above to classify
-                    <b>Dark</b>, <b>Green (Unroasted)</b>, <b>Light</b>, or <b>Medium</b> coffee beans.
+                    <b>Light</b>, <b>Medium</b>, or <b>Dark</b> roasted coffee beans.
                 </p>
             </div>
             """,

@@ -1,11 +1,14 @@
 """
-Evaluation Script (`src/evaluate.py`) for the 4-Class Coffee Roast Level Classifier.
+Evaluation Script (`src/evaluate.py`) for the 3-Class Coffee Roast Level Classifier:
+  - Index 0: Dark
+  - Index 1: Light
+  - Index 2: Medium
 
 Features:
 1. Loads `models/coffee_model_best.pth` and `models/classes.json`, and evaluates on `data/test/`.
 2. Calculates and displays Overall Accuracy and per-class Precision, Recall, and F1-Score
-   for all 4 classes: Dark (0), Green (1), Light (2), Medium (3).
-3. Plots and saves a 4x4 Confusion Matrix heatmap to `reports/confusion_matrix.png` using Seaborn.
+   for all 3 classes: Dark (0), Light (1), Medium (2).
+3. Plots and saves a 3x3 Confusion Matrix heatmap to `reports/confusion_matrix.png` using Seaborn.
 4. Saves top-5 misclassified images analysis plot to `reports/top_misclassified.png`.
 """
 
@@ -50,7 +53,7 @@ def load_class_names(
 ) -> List[str]:
     """
     Resolve ordered class names from `models/classes.json`
-    (format `{"0": "Dark", "1": "Green", "2": "Light", "3": "Medium"}`).
+    (format `{"0": "Dark", "1": "Light", "2": "Medium"}`).
     """
     if classes_path.exists():
         with open(classes_path, "r", encoding="utf-8") as f:
@@ -78,7 +81,7 @@ def load_trained_model(
     device: torch.device,
     default_arch: str = "mobilenet_v2",
 ) -> nn.Module:
-    """Load trained 4-class model weights from `models/coffee_model_best.pth`."""
+    """Load trained 3-class model weights from `models/coffee_model_best.pth`."""
     if not model_path.exists():
         raise FileNotFoundError(
             f"Checkpoint not found at '{model_path}'. "
@@ -109,11 +112,11 @@ def plot_confusion_matrix(
     overall_acc: float,
     output_path: Path,
 ) -> None:
-    """Plot and save a 4x4 Confusion Matrix heatmap to `reports/confusion_matrix.png`."""
+    """Plot and save a 3x3 Confusion Matrix heatmap to `reports/confusion_matrix.png`."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
     cm = confusion_matrix(y_true, y_pred, labels=list(range(len(class_names))))
 
-    fig, ax = plt.subplots(figsize=(7.5, 6.2))
+    fig, ax = plt.subplots(figsize=(7.0, 5.8))
     sns.heatmap(
         cm,
         annot=True,
@@ -128,10 +131,10 @@ def plot_confusion_matrix(
         ax=ax,
     )
 
-    ax.set_xlabel("Predicted Class", fontsize=12, fontweight="bold", labelpad=10)
-    ax.set_ylabel("Ground Truth Class", fontsize=12, fontweight="bold", labelpad=10)
+    ax.set_xlabel("Predicted Roast Level", fontsize=12, fontweight="bold", labelpad=10)
+    ax.set_ylabel("Ground Truth Roast Level", fontsize=12, fontweight="bold", labelpad=10)
     ax.set_title(
-        f"4-Class Coffee Bean Classification — Confusion Matrix\n(Test Accuracy: {overall_acc * 100:.2f}%)",
+        f"3-Class Coffee Roast Classification — Confusion Matrix\n(Test Accuracy: {overall_acc * 100:.2f}%)",
         fontsize=13,
         fontweight="bold",
         pad=14,
@@ -141,7 +144,7 @@ def plot_confusion_matrix(
     plt.tight_layout()
     fig.savefig(output_path, dpi=200)
     plt.close(fig)
-    print(f"Saved 4x4 confusion matrix heatmap to '{output_path}'.")
+    print(f"Saved 3x3 confusion matrix heatmap to '{output_path}'.")
 
 
 def plot_top_misclassified(
@@ -221,7 +224,7 @@ def evaluate(
     batch_size: int = 32,
     top_k_errors: int = 5,
 ) -> None:
-    """Run inference on `data/test/`, print metrics, and save confusion matrix & error analysis."""
+    """Run inference on `data/test/`, print metrics, and save 3x3 confusion matrix & error analysis."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     test_dir = data_dir / "test"
 
@@ -288,7 +291,7 @@ def evaluate(
     )
 
     print("=" * 64)
-    print("4-CLASS COFFEE ROAST LEVEL CLASSIFICATION — TEST EVALUATION")
+    print("3-CLASS COFFEE ROAST LEVEL CLASSIFICATION — TEST EVALUATION")
     print("=" * 64)
     print(f"Checkpoint Evaluated   : {model_path}")
     print(f"Classes                : { {i: c for i, c in enumerate(class_names)} }")
@@ -317,7 +320,7 @@ def evaluate(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Evaluate 4-class Coffee Roast Classifier on data/test/."
+        description="Evaluate 3-class Coffee Roast Classifier on data/test/."
     )
     parser.add_argument("--data-dir", type=Path, default=Path("data"))
     parser.add_argument("--model-path", type=Path, default=Path("models/coffee_model_best.pth"))

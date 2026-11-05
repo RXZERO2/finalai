@@ -1,9 +1,8 @@
 """
-Dataset and DataLoader utilities for 4-Class Coffee Bean Roast Classification:
+Dataset and DataLoader utilities for 3-Class Coffee Roast Level Classification:
   - Index 0: Dark
-  - Index 1: Green
-  - Index 2: Light
-  - Index 3: Medium
+  - Index 1: Light
+  - Index 2: Medium
 """
 
 from pathlib import Path
@@ -18,7 +17,7 @@ IMAGE_SIZE = (224, 224)
 
 def get_transforms() -> Dict[str, transforms.Compose]:
     """
-    Build standard preprocessing and augmentation pipelines for 4-class classification:
+    Build standard preprocessing and augmentation pipelines for 3-class classification:
     Resize(224, 224), Horizontal/Vertical Flip, ColorJitter, and ImageNet Normalization.
     """
     train_transform = transforms.Compose([
