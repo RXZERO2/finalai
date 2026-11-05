@@ -1,0 +1,18 @@
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Temporary extraction directories
+data/_extracted/
+
+# Explicitly track trained model checkpoint and class mappings for Streamlit Cloud
+!models/
+!models/*.pth
+!models/*.json
+
